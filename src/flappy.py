@@ -283,6 +283,7 @@ def mainGame(movementInfo):
         # Q-Table action
         #if bot.act(-playerx + myPipe["x"], -playery + myPipe["y"], playerVelY):
         # ANN action
+
             if playery > -2 * IMAGES["player"][0].get_height():
                 playerVelY = playerFlapAcc
                 playerFlapped = True
@@ -294,7 +295,7 @@ def mainGame(movementInfo):
         )
         if crashTest[0]:
             # Update the q scores
-            bot.update_scores()
+            #bot.update_scores()
 
             return {
                 "y": playery,
