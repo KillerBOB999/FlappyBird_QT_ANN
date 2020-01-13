@@ -27,6 +27,8 @@ class NeuralNetwork(object):
         for inNeuron in self._edgeDict:
             for outNeuron in self._edgeDict:
                 # TODO
+                print()
+        return
 
     def sigmoid(self, numeratorFactor: float, exponentfactor: float, inputValue: float):
         return numeratorFactor / (1 + math.exp(-exponentfactor * inputValue))
