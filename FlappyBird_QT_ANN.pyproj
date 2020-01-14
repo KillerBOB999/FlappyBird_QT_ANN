@@ -28,6 +28,9 @@
     <Compile Include="src\initialize_qvalues.py" />
     <Compile Include="src\learn.py" />
     <Compile Include="src\neuralNetwork.py" />
+    <Compile Include="src\tensorBot.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="data\" />

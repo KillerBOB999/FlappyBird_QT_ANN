@@ -22,8 +22,14 @@ from neuralNetwork import NeuralNetwork
 import edge
 from edge import Edge
 
-INPUTS = (0, 0, 0, 0, 0) #(birdX, birdY, pipe1X, pipe1UY, pipe1LY)
-OUTPUTS = (0, 0) #(none, jump)
+import tensorBot
+from tensorBot import TensorBot
+
+tBot = TensorBot()
+
+INPUTS = list() #(birdX, birdY, pipe1X, pipe1UY, pipe1LY)
+ACTION = int()
+PREV_STATE = INPUTS
 
 ANN = None
 EDGES = list()
@@ -120,11 +126,15 @@ def main():
     SOUNDS["wing"] = pygame.mixer.Sound("data/assets/audio/wing" + soundExt)
 
     # Set up ANN
-    EDGES.clear()
-    for inputIndex, input in enumerate(INPUTS, start=0):
-        for outputIndex, output in enumerate(OUTPUTS, start=0):
-            EDGES.append(Edge(inputIndex, len(INPUTS) + outputIndex, random.random(), random.random()))
+    #EDGES.clear()
+    #for inputIndex in range(len(INPUTS)):
+    #    for outputIndex in range(len(OUTPUTS)):
+    #        EDGES.append(Edge(inputIndex, len(INPUTS) + outputIndex, random.random(), random.random()))
 
+    #outputIDs = list()
+    #for outputIndex, output in enumerate(OUTPUTS, start=0):
+    #    outputIDs.append(len(INPUTS) + outputIndex)
+    #ANN = NeuralNetwork(EDGES, len(INPUTS) + len(OUTPUTS), outputIDs)
     
 
     while True:
@@ -229,7 +239,7 @@ def showWelcomeAnimation():
 
 
 def mainGame(movementInfo):
-
+    global INPUTS, OUTPUTS, PREV_STATE, tBot
     score = playerIndex = loopIter = 0
     playerIndexGen = movementInfo["playerIndexGen"]
 
@@ -264,6 +274,7 @@ def mainGame(movementInfo):
     playerFlapAcc = -9  # players speed on flapping
     playerFlapped = False  # True when player flaps
 
+    firstTime = True
     while True:
         if -playerx + lowerPipes[0]["x"] > -30:
             myPipe = lowerPipes[0]
@@ -283,7 +294,13 @@ def mainGame(movementInfo):
         # Q-Table action
         #if bot.act(-playerx + myPipe["x"], -playery + myPipe["y"], playerVelY):
         # ANN action
-
+        INPUTS = (-playerx + myPipe["x"], -playery + myPipe["y"], playerVelY)
+        if firstTime:
+            PREV_STATE = INPUTS
+            firstTime = False
+        #OUTPUTS = ANN.feedForward(INPUTS)
+        action = tBot.get_next_action(INPUTS)
+        if action:
             if playery > -2 * IMAGES["player"][0].get_height():
                 playerVelY = playerFlapAcc
                 playerFlapped = True
@@ -296,7 +313,6 @@ def mainGame(movementInfo):
         if crashTest[0]:
             # Update the q scores
             #bot.update_scores()
-
             return {
                 "y": playery,
                 "groundCrash": crashTest[1],
@@ -306,6 +322,9 @@ def mainGame(movementInfo):
                 "score": score,
                 "playerVelY": playerVelY,
             }
+        else:
+            tBot.train(PREV_STATE, ACTION, 1, INPUTS)
+        PREV_STATE = INPUTS
 
         # check for score
         playerMidPos = playerx + IMAGES["player"][0].get_width() / 2
@@ -362,6 +381,8 @@ def mainGame(movementInfo):
 
 
 def showGameOverScreen(crashInfo):
+    global PREV_STATE, ACTION, INPUTS
+    tBot.train(PREV_STATE, ACTION, -1000, INPUTS)
     """crashes the player down and shows gameover image"""
     score = crashInfo["score"]
     playerx = SCREENWIDTH * 0.2
