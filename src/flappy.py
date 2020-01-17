@@ -278,7 +278,7 @@ def mainGame(movementInfo):
         # Q-Table action
         #if bot.act(-playerx + myPipe["x"], -playery + myPipe["y"], playerVelY):
         # ANN action
-        INPUTS = (-playerx + myPipe["x"], -playery + myPipe["y"], playerVelY)
+        INPUTS = (-playerx + myPipe["x"], -playery + myPipe["y"], -playery + myPipe["y"] - PIPEGAPSIZE, playerVelY)
         if firstTime:
             PREV_STATE = INPUTS
             firstTime = False
