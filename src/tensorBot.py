@@ -11,7 +11,7 @@ class TensorBot(object):
         self.exploration_delta = 1.0 / iterations # Shift from exploration to exploitation
 
         # Input has five neurons (playerx, playery, pipe1X, pipe1UY, pipe1LY)
-        self.input_count = 3
+        self.input_count = 4
         # Output is two neurons, each represents Q-value for action (NONE and JUMP)
         self.output_count = 2
 
