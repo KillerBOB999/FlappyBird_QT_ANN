@@ -16,12 +16,6 @@ from bot import Bot
 bot = Bot()
 
 # ANN stuff
-import neuralNetwork
-from neuralNetwork import NeuralNetwork
-
-import edge
-from edge import Edge
-
 import tensorBot
 from tensorBot import TensorBot
 
@@ -30,6 +24,8 @@ tBot = TensorBot()
 INPUTS = list() #(birdX, birdY, pipe1X, pipe1UY, pipe1LY)
 ACTION = int()
 PREV_STATE = INPUTS
+LIVE_REWARD = 0.001
+DEAD_REWARD = -1
 
 ANN = None
 EDGES = list()
@@ -123,19 +119,7 @@ def main():
     SOUNDS["hit"] = pygame.mixer.Sound("data/assets/audio/hit" + soundExt)
     SOUNDS["point"] = pygame.mixer.Sound("data/assets/audio/point" + soundExt)
     SOUNDS["swoosh"] = pygame.mixer.Sound("data/assets/audio/swoosh" + soundExt)
-    SOUNDS["wing"] = pygame.mixer.Sound("data/assets/audio/wing" + soundExt)
-
-    # Set up ANN
-    #EDGES.clear()
-    #for inputIndex in range(len(INPUTS)):
-    #    for outputIndex in range(len(OUTPUTS)):
-    #        EDGES.append(Edge(inputIndex, len(INPUTS) + outputIndex, random.random(), random.random()))
-
-    #outputIDs = list()
-    #for outputIndex, output in enumerate(OUTPUTS, start=0):
-    #    outputIDs.append(len(INPUTS) + outputIndex)
-    #ANN = NeuralNetwork(EDGES, len(INPUTS) + len(OUTPUTS), outputIDs)
-    
+    SOUNDS["wing"] = pygame.mixer.Sound("data/assets/audio/wing" + soundExt)    
 
     while True:
         # select random background sprites
@@ -239,7 +223,7 @@ def showWelcomeAnimation():
 
 
 def mainGame(movementInfo):
-    global INPUTS, OUTPUTS, PREV_STATE, tBot
+    global INPUTS, OUTPUTS, PREV_STATE, tBot, LIVE_REWARD, ACTION
     score = playerIndex = loopIter = 0
     playerIndexGen = movementInfo["playerIndexGen"]
 
@@ -254,14 +238,14 @@ def mainGame(movementInfo):
 
     # list of upper pipes
     upperPipes = [
-        {"x": SCREENWIDTH + 200, "y": newPipe1[0]["y"]},
-        {"x": SCREENWIDTH + 200 + (SCREENWIDTH / 2), "y": newPipe2[0]["y"]},
+        {"x": SCREENWIDTH, "y": newPipe1[0]["y"]},
+        {"x": SCREENWIDTH + (SCREENWIDTH / 2), "y": newPipe2[0]["y"]},
     ]
 
     # list of lowerpipe
     lowerPipes = [
-        {"x": SCREENWIDTH + 200, "y": newPipe1[1]["y"]},
-        {"x": SCREENWIDTH + 200 + (SCREENWIDTH / 2), "y": newPipe2[1]["y"]},
+        {"x": SCREENWIDTH, "y": newPipe1[1]["y"]},
+        {"x": SCREENWIDTH + (SCREENWIDTH / 2), "y": newPipe2[1]["y"]},
     ]
 
     pipeVelX = -4
@@ -299,8 +283,8 @@ def mainGame(movementInfo):
             PREV_STATE = INPUTS
             firstTime = False
         #OUTPUTS = ANN.feedForward(INPUTS)
-        action = tBot.get_next_action(INPUTS)
-        if action:
+        ACTION = tBot.get_next_action(INPUTS)
+        if ACTION:
             if playery > -2 * IMAGES["player"][0].get_height():
                 playerVelY = playerFlapAcc
                 playerFlapped = True
@@ -323,7 +307,7 @@ def mainGame(movementInfo):
                 "playerVelY": playerVelY,
             }
         else:
-            tBot.train(PREV_STATE, ACTION, 1, INPUTS)
+            tBot.train(PREV_STATE, ACTION, LIVE_REWARD, INPUTS)
         PREV_STATE = INPUTS
 
         # check for score
@@ -381,8 +365,8 @@ def mainGame(movementInfo):
 
 
 def showGameOverScreen(crashInfo):
-    global PREV_STATE, ACTION, INPUTS
-    tBot.train(PREV_STATE, ACTION, -1000, INPUTS)
+    global PREV_STATE, ACTION, INPUTS, DEAD_REWARD
+    tBot.update(PREV_STATE, ACTION, DEAD_REWARD, INPUTS)
     """crashes the player down and shows gameover image"""
     score = crashInfo["score"]
     playerx = SCREENWIDTH * 0.2
@@ -535,7 +519,6 @@ def getHitmask(image):
         for y in range(image.get_height()):
             mask[x].append(bool(image.get_at((x, y))[3]))
     return mask
-
 
 if __name__ == "__main__":
     main()

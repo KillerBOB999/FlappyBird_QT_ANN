@@ -22,12 +22,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\bot.py" />
-    <Compile Include="src\edge.py" />
     <Compile Include="src\flappy.py" />
     <Compile Include="src\flappyBird_ANN.py" />
     <Compile Include="src\initialize_qvalues.py" />
     <Compile Include="src\learn.py" />
-    <Compile Include="src\neuralNetwork.py" />
     <Compile Include="src\tensorBot.py">
       <SubType>Code</SubType>
     </Compile>

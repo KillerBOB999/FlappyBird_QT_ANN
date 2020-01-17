@@ -4,11 +4,11 @@ import numpy as np
 
 class TensorBot(object):
     """description of class"""
-    def __init__(self, learning_rate=0.1, discount=1.0, exploration_rate=1.0, iterations=10000):
+    def __init__(self, learning_rate=0.001, discount=1.0, exploration_rate=1.0, iterations=100000):
         self.learning_rate = learning_rate
         self.discount = discount
         self.exploration_rate = 1.0 # Initial exploration rate
-        self.exploration_delta = 1.0 / iterations # Shift from exploration to explotation
+        self.exploration_delta = 1.0 / iterations # Shift from exploration to exploitation
 
         # Input has five neurons (playerx, playery, pipe1X, pipe1UY, pipe1LY)
         self.input_count = 3
@@ -53,7 +53,7 @@ class TensorBot(object):
 
     def get_next_action(self, state):
         rng = random.random()
-        if rng > self.exploration_rate: # Explore (gamble) or exploit (greedy)
+        if rng < 0.1 or rng > self.exploration_rate: # Explore (gamble) or exploit (greedy)
             return self.greedy_action(state)
         else:
             return self.random_action()
@@ -65,11 +65,12 @@ class TensorBot(object):
 
     def random_action(self):
         rng = random.random()
-        return 0 if rng < 0.5 else 1
+        return 0 if rng < 0.95 else 1
 
     def train(self, old_state, action, reward, new_state):
         # Ask the model for the Q values of the old state (inference)
         old_state_Q_values = self.get_Q(old_state)
+        qAtTimeOfAction = old_state_Q_values.copy()
 
         # Ask the model for the Q values of the new state (inference)
         new_state_Q_values = self.get_Q(new_state)
@@ -77,6 +78,10 @@ class TensorBot(object):
         # Real Q value for the action we took. This is what we will train towards.
         old_state_Q_values[action] = reward + self.discount * np.amax(new_state_Q_values)
         
+        print("S:", repr(old_state).ljust(15), "A:", action, "S':", repr(new_state).ljust(15), "R:", repr(reward).ljust(7), "Q:", repr(qAtTimeOfAction).ljust(45), "Q':", repr(new_state_Q_values).ljust(45), "AQ:", repr(old_state_Q_values).ljust(45))
+        if reward < 0:
+            print()
+
         # Setup training data
         training_input = [old_state]
         target_output = [old_state_Q_values]
@@ -85,7 +90,7 @@ class TensorBot(object):
         # Train
         self.session.run(self.optimizer, feed_dict=training_data)
 
-    def update(self, old_state, new_state, action, reward):
+    def update(self, old_state, action, reward, new_state):
         # Train our model with new data
         self.train(old_state, action, reward, new_state)
 
