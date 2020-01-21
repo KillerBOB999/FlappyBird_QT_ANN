@@ -75,7 +75,7 @@ def main():
     global SCREEN, FPSCLOCK, FPS, bot, ANN, EDGES
 
     parser = argparse.ArgumentParser("flappy.py")
-    parser.add_argument("--fps", type=int, default=60, help="number of frames per second")
+    parser.add_argument("--fps", type=int, default=6000, help="number of frames per second")
     parser.add_argument(
         "--dump_hitmasks", action="store_true", help="dump hitmasks to file and exit"
     )
