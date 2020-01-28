@@ -1,10 +1,11 @@
 import random
 import tensorflow as tf
+from tensorflow import keras
 import numpy as np
 
 class TensorBot(object):
     """description of class"""
-    def __init__(self, learning_rate=0.001, discount=1.0, exploration_rate=1.0, iterations=100000):
+    def __init__(self, learning_rate=0.001, discount=1.0, exploration_rate=1.0, iterations=1000000):
         self.learning_rate = learning_rate
         self.discount = discount
         self.exploration_rate = 1.0 # Initial exploration rate
@@ -15,45 +16,54 @@ class TensorBot(object):
         # Output is two neurons, each represents Q-value for action (NONE and JUMP)
         self.output_count = 2
 
-        self.session = tf.compat.v1.Session()
+        #self.session = tf.compat.v1.Session()
         self.define_model()
-        self.session.run(self.initializer)
+        #self.session.run(self.initializer)
 
     # Define tensorflow model graph
     def define_model(self):
+        self.model = keras.Sequential([
+            keras.layers.Dense(units=self.input_count),
+            keras.layers.Dense(units=256, activation='relu'),
+            keras.layers.Dense(units=256, activation='relu'),
+            keras.layers.Dense(units=self.output_count, activation='linear')
+        ])
+        self.optimizer = keras.optimizers.Adam(lr=self.learning_rate)
+        self.model.compile(loss='mse', optimizer=self.optimizer)
         # Input is an array of 5 items (playerx, playery, pipe1X, pipe1UY, pipe1LY)
         # Input is 2-dimensional, due to possibility of batched training data
         # NOTE: In this example we assume no batching.
-        tf.compat.v1.disable_eager_execution()
-        self.model_input = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.input_count])
+        #tf.compat.v1.disable_eager_execution()
+        #self.model_input = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, self.input_count])
 
         # Two hidden layers of 16 neurons with sigmoid activation initialized to zero for stability
-        fc1 = tf.compat.v1.layers.dense(self.model_input, 16, activation=tf.sigmoid, kernel_initializer=tf.constant_initializer(np.zeros((self.input_count, 16))))
-        fc2 = tf.compat.v1.layers.dense(fc1, 16, activation=tf.sigmoid, kernel_initializer=tf.constant_initializer(np.zeros((16, 16))))
+        #fc1 = tf.compat.v1.layers.dense(self.model_input, 64, activation=tf.sigmoid, kernel_initializer=tf.constant_initializer(np.zeros((self.input_count, 64))))
+        #fc2 = tf.compat.v1.layers.dense(fc1, 64, activation=tf.sigmoid, kernel_initializer=tf.constant_initializer(np.zeros((64, 64))))
 
         # Output is two values, Q for both possible actions JUMP and NONE
         # Output is 2-dimensional, due to possibility of batched training data
         # NOTE: In this example we assume no batching.
-        self.model_output = tf.compat.v1.layers.dense(fc2, self.output_count)
+        #self.model_output = tf.compat.v1.layers.dense(fc2, self.output_count)
 
         # This is for feeding training output (a.k.a ideal target values)
-        self.target_output = tf.compat.v1.placeholder(shape=[None, self.output_count], dtype=tf.float32)
+        #self.target_output = tf.compat.v1.placeholder(shape=[None, self.output_count], dtype=tf.float32)
         # Loss is mean squared difference between current output and ideal target values
-        loss = tf.compat.v1.losses.mean_squared_error(self.target_output, self.model_output)
+        #loss = tf.compat.v1.losses.mean_squared_error(self.target_output, self.model_output)
         # Optimizer adjusts weights to minimize loss, with the speed of learning_rate
-        self.optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learning_rate).minimize(loss)
+        #self.optimizer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learning_rate).minimize(loss)
         # Initializer to set weights to initial values
-        self.initializer = tf.compat.v1.global_variables_initializer()
+        #self.initializer = tf.compat.v1.global_variables_initializer()
 
     # Ask model to estimate Q value for specific state (inference)
     def get_Q(self, state):
         # Model input: Single state represented by array of 5 items (state one-hot)
         # Model output: Array of Q values for single state
-        return self.session.run(self.model_output, feed_dict={self.model_input: [state]})[0]
+        #return self.session.run(self.model_output, feed_dict={self.model_input: [state]})[0]
+        return self.model.predict(state)[0]
 
     def get_next_action(self, state):
         rng = random.random()
-        if rng < 0.1 or rng > self.exploration_rate: # Explore (gamble) or exploit (greedy)
+        if rng < 0.1 or (self.exploration_rate > 0.1 and rng > self.exploration_rate): # Explore (gamble) or exploit (greedy)
             return self.greedy_action(state)
         else:
             return self.random_action()
@@ -65,7 +75,7 @@ class TensorBot(object):
 
     def random_action(self):
         rng = random.random()
-        return 0 if rng < 0.95 else 1
+        return 0 if rng < 0.999 else 1
 
     def train(self, old_state, action, reward, new_state):
         # Ask the model for the Q values of the old state (inference)
@@ -83,12 +93,13 @@ class TensorBot(object):
             print()
 
         # Setup training data
-        training_input = [old_state]
-        target_output = [old_state_Q_values]
-        training_data = {self.model_input: training_input, self.target_output: target_output}
+        training_input = np.array(old_state)
+        target_output = np.array(old_state_Q_values)
+        #training_data = {self.model_input: training_input, self.target_output: target_output}
 
         # Train
-        self.session.run(self.optimizer, feed_dict=training_data)
+        #self.session.run(self.optimizer, feed_dict=training_data)
+        self.model.fit(x=training_input, y=target_output)
 
     def update(self, old_state, action, reward, new_state):
         # Train our model with new data

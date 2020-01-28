@@ -24,11 +24,9 @@ tBot = TensorBot()
 INPUTS = list() #(birdX, birdY, pipe1X, pipe1UY, pipe1LY)
 ACTION = int()
 PREV_STATE = INPUTS
-LIVE_REWARD = 0.001
+LIVE_REWARD = 0.0001
 DEAD_REWARD = -1
-
-ANN = None
-EDGES = list()
+SCORE_REWARD = 0.1
 
 SCREENWIDTH = 288
 SCREENHEIGHT = 512
@@ -223,7 +221,7 @@ def showWelcomeAnimation():
 
 
 def mainGame(movementInfo):
-    global INPUTS, OUTPUTS, PREV_STATE, tBot, LIVE_REWARD, ACTION
+    global INPUTS, OUTPUTS, PREV_STATE, tBot, LIVE_REWARD, ACTION, SCORE_REWARD
     score = playerIndex = loopIter = 0
     playerIndexGen = movementInfo["playerIndexGen"]
 
@@ -306,17 +304,22 @@ def mainGame(movementInfo):
                 "score": score,
                 "playerVelY": playerVelY,
             }
-        else:
-            tBot.train(PREV_STATE, ACTION, LIVE_REWARD, INPUTS)
-        PREV_STATE = INPUTS
 
         # check for score
+        useScoreReward = False
         playerMidPos = playerx + IMAGES["player"][0].get_width() / 2
         for pipe in upperPipes:
             pipeMidPos = pipe["x"] + IMAGES["pipe"][0].get_width() / 2
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 score += 1
                 SOUNDS["point"].play()
+                useScoreReward = True
+
+        if useScoreReward:
+            tBot.update(PREV_STATE, ACTION, SCORE_REWARD, INPUTS)
+        else:
+            tBot.update(PREV_STATE, ACTION, LIVE_REWARD, INPUTS)
+        PREV_STATE = INPUTS
 
         # playerIndex basex change
         if (loopIter + 1) % 3 == 0:
